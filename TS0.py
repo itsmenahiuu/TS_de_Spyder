@@ -41,7 +41,7 @@ plt.grid(True)
 plt.show()
 
 
-#Bonus
+#Bonus para diferentes frecuencias
 
 #cambio mi ff por las del bonus
 tt1, yy1 = mi_funcion_sen(1, 0, 500, 0, 1000, 1000)
