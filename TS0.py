@@ -1,5 +1,5 @@
 #llamo a mi libreria numpy (como en c)
-import numpy as np 
+import numpy as np  
 import matplotlib.pyplot as plt
 
 def mi_funcion_sen( vmax, dc, ff, ph, nn, fs): 
@@ -31,7 +31,7 @@ def mi_funcion_sen( vmax, dc, ff, ph, nn, fs):
 
 N=1000
 fs=1000
-tt, yy = mi_funcion_sen(1, 0, 1, 0, N, fs)
+tt, yy = mi_funcion_sen(1, 0, 4, 0, N, fs)
 plt.figure(1)
 plt.plot(tt, yy, color='orchid') 
 plt.title('Señal Senoidal')
@@ -47,7 +47,7 @@ plt.show()
 tt1, yy1 = mi_funcion_sen(1, 0, 500, 0, 1000, 1000)
 tt2, yy2 = mi_funcion_sen(1, 0, 999, 0, 1000, 1000)
 tt3, yy3 = mi_funcion_sen(1, 0, 1001, 0, 1000, 1000)
-tt4, yy4 = mi_funcion_sen(1, 0, 2001, 0, 1000, 1000)
+tt4, yy4 = mi_funcion_sen(1, 0, 2004, 0, 1000, 1000)
 
 plt.figure(2)
 plt.subplot(2,2,1) #como en matlab
