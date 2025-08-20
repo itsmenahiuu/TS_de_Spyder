@@ -16,7 +16,7 @@ def mi_funcion_sen( vmax, dc, ff, ph, nn, fs):
 
     return tt,xx 
 
-N=1000
+N=1000 
 fs=1000
 tt, yy = mi_funcion_sen(1, 0, 2000, 0, N, fs)
 plt.figure(1)
