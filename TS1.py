@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
+import scipy.signal as sig
 
 
 def mi_funcion_sen(vmax, dc, ff, ph, nn, fs):
@@ -86,7 +86,7 @@ plt.xlim(0, 0.003)
 #-----------------SEÑAL CUADRADA-----------------#
 TsC = 1/fs
 ttC = np.linspace(0, (N-1)*TsC, N)
-señalCuadrada = signal.square(2 * np.pi * 4000 * ttC)
+señalCuadrada = sig.square(2 * np.pi * 4000 * ttC)
 
 plt.figure(4)
 plt.subplot(1, 2, 1)
@@ -102,7 +102,7 @@ plt.show()
 
 #-----------------PULSO RECTANGULAR-----------------#
 TsP = 0.01   # 10 ms
-fsP = 100000   
+fsP = 80000   
 #t = np.linspace(0, Ttotal, N, endpoint=False)
 t = np.arange(-2*TsP, 2*TsP, 1/fsP)  # eje temporal de -20 ms a 20 ms
 pulso = np.where((t >= -TsP/2) & (t <= TsP/2), 1, 0)#vale 1 entre -T/2 y T/2, 0 fuera
@@ -124,7 +124,135 @@ plt.tight_layout()
 plt.show()
 
 
+#-----------------ORTOGONALIDAD-----------------#
+def verificarOrtogonalidad(x1, x2):
 
+    L = min(len(x1), len(x2)) # Cuando hace producto interno necesitas tener la misma cant de puntos
+    #Por si no tenes la misma cantidad de puntos, pones eso y toma la cant de puntos de la señal qie menos puntos tenga
+    productoInterno = np.dot(x1[:L], x2[:L])
+    return productoInterno
+
+
+producto = verificarOrtogonalidad(xx, xx1)
+print("Verificacion de ortogonalidad entre mi senoidal de 2KHz y la misma amplificada y desfasada: \n", round(producto, 3))
+if abs(producto) < 1e-10: #porque no da 0 justo por alguna razon
+    print("Las señales son ortogonales\n")
+else:
+    print("Las señales no son ortogonales\n")
+
+
+producto = verificarOrtogonalidad(xx, modulada)
+print("Verificacion de ortogonalidad entre mi senoidal de 2KHz y una modulada por una sinusoidal de la mitad de la frecuencia: \n", round(producto, 3))
+if abs(producto) < 1e-10: #porque no da 0 justo por alguna razon
+    print("Las señales son ortogonales\n")
+else:
+    print("Las señales no son ortogonales\n")
+
+
+producto = verificarOrtogonalidad(xx, senoidalRecortada)
+print("Verificacion de ortogonalidad entre mi senoidal de 2KHz y la misma recortada al 75% de su amplitud: \n", round(producto, 3))
+if abs(producto) < 1e-10: #porque no da 0 justo por alguna razon 
+    print("Las señales son ortogonales\n")
+else:
+    print("Las señales no son ortogonales\n")
+
+
+producto = verificarOrtogonalidad(xx, señalCuadrada)
+print("Verificacion de ortogonalidad entre mi senoidal de 2KHz y una señal cuadrada de 4KHz: \n", round(producto, 3))
+if abs(producto) < 1e-10: #porque no da 0 justo por alguna razon
+    print("Las señales son ortogonales\n")
+else:
+    print("Las señales no son ortogonales\n")
+
+
+producto = verificarOrtogonalidad(xx, pulso)
+print("Verificacion de ortogonalidad entre mi senoidal de 2KHz y un pulso rectangular de 10ms: \n", round(producto, 3))
+if abs(producto) < 1e-10: #porque no da 0 justo por alguna razon
+    print("Las señales son ortogonales\n")
+else:
+    print("Las señales no son ortogonales\n")
+
+
+#-----------------CORRELACION-----------------#
+
+def correlacion(x1, x2, mode="full"):
+
+    demora = sig.correlation_lags(len(x1), len(x2), mode=mode) #Calculo los desplazamientos correspondientes a cada valor que devuelve wl correlate
+    # osea indico cuanto se desplazo la señal "x1" respecto a "x2".
+    C = sig.correlate(x1, x2, mode=mode) #Devuelvo un vector de valores de correlacion para cada posible desplazamiento
+    #La correlacion mide que tan parecidas son las señales cuando una se desplaza respecto a la otra
+    
+    return demora, C
+
+
+demora, C = correlacion(xx, xx) 
+plt.figure(5)
+plt.subplot(3, 2, 1)
+plt.plot(demora, C, color='mediumvioletred')
+plt.title("Autocorrelacion")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+demora1, C1 = correlacion(xx, xx1) 
+plt.subplot(3, 2, 2)
+plt.plot(demora1, C1, color='deepskyblue')
+plt.title("Correlacion con otra senoidal")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+demora2, C2 = correlacion(xx, modulada) 
+plt.subplot(3, 2, 3)
+plt.plot(demora2, C2, color='indigo')
+plt.title("Correlacion con una señal modulada")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+demora3, C3 = correlacion(xx, senoidalRecortada) 
+plt.subplot(3, 2, 4)
+plt.plot(demora3, C3, color='teal')
+plt.title("Correlacion con una señal recortada")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+demora4, C4 = correlacion(xx, señalCuadrada) 
+#plt.figure(6)
+plt.subplot(3, 2, 5)
+plt.plot(demora4, C4, color='gold')
+plt.title("Correlacion con una señal cuadrada")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+demora5, C5 = correlacion(xx, pulso) 
+#plt.figure(7)
+plt.subplot(3, 2, 6)
+plt.plot(demora5, C5, color='plum')
+plt.title("Correlacion con un pulso rectangular")
+plt.xlabel("Demora")
+plt.ylabel("Correlacion")
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
 
 
 

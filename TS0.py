@@ -31,7 +31,7 @@ def mi_funcion_sen( vmax, dc, ff, ph, nn, fs):
 
 N=1000
 fs=1000
-tt, yy = mi_funcion_sen(1, 0, 4, 0, N, fs)
+tt, yy = mi_funcion_sen(1, 0, 1, 0, N, fs)
 plt.figure(1)
 plt.plot(tt, yy, color='orchid') 
 plt.title('Señal Senoidal')
@@ -47,36 +47,38 @@ plt.show()
 tt1, yy1 = mi_funcion_sen(1, 0, 500, 0, 1000, 1000)
 tt2, yy2 = mi_funcion_sen(1, 0, 999, 0, 1000, 1000)
 tt3, yy3 = mi_funcion_sen(1, 0, 1001, 0, 1000, 1000)
-tt4, yy4 = mi_funcion_sen(1, 0, 2004, 0, 1000, 1000)
+tt4, yy4 = mi_funcion_sen(1, 0, 2001, 0, 1000, 1000)
 
 plt.figure(2)
-plt.subplot(2,2,1) #como en matlab
+plt.subplot(2,2,1) #como en matlab (fila,columna, posicion)
 plt.plot(tt1, yy1, color='pink') 
 plt.title('ff = 500 Hz')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
 
 plt.subplot(2,2,2)
 plt.plot(tt2, yy2, color='deeppink') 
 plt.title('ff = 999 Hz')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
 
 plt.subplot(2,2,3)
 plt.plot(tt3, yy3, color='mediumorchid') 
 plt.title('ff = 1001 Hz')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
 
 plt.subplot(2,2,4)
 plt.plot(tt4, yy4, color='rebeccapurple') 
 plt.title('ff = 2001 Hz')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
 
 plt.tight_layout()  #para que no se solapen mis graficos (solucion que me dio gtp a un error que tenia)
 plt.show()
-
-
 
 
