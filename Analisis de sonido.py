@@ -18,6 +18,16 @@ energiaDer = np.sum(data[:, 1].astype(float)**2)
 print("\nEnergia canal izquierdo:", energiaIzq)
 print("\nEnergia canal derecho:", energiaDer)
 
+#--------------------NORMALIZO--------------------#
+data_float = data.astype(float) #convierto a float para evitar overflow y luego normalizo
+max_val = np.max(np.abs(data_float))  #valor máximo absoluto de toda la señal
+data_norm = data_float / max_val      #normalizo al rango [-1, 1]
+
+# --- Energía normalizada por canal ---
+energiaDer_norm = np.sum(data_norm[:, 1]**2)
+
+
+print("Energía del audio:", energiaDer_norm)
 
 #Yo ya se de antemano que mi sonido esta en dos canales (stereo) porque me lo avisaba la pagina de donde descargue dicho sonido
 #Hago dos graficos superpuestos para poder ver ambos
@@ -41,5 +51,4 @@ plt.grid()
 
 plt.tight_layout()
 plt.show()
-
 

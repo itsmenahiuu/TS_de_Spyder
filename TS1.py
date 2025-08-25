@@ -27,26 +27,34 @@ fs = 80000  # debo poner al menos el doble de la frecuencia que quiero esstudiar
 # use 2kHz asi que al menos mi frec de muestreo deeria ser 4kHz pero puse 80k para darme mas margen
 tt, xx = mi_funcion_sen(1, 0, 2000, 0, N, fs)
 plt.figure(1)
-plt.subplot(1, 2, 1)
+plt.subplot(1, 3, 1)
 plt.plot(tt, xx, color='orchid')
 plt.title('Señal Senoidal')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
 plt.grid(True)
 plt.xlim(0, 0.003)
-plt.show()
+plt.tight_layout()
 
-#-----------SEÑAL AMPLIFICADA Y DESFASADA PI/2 (de amplitud 1 a 5)-----------#
-tt1, xx1 = mi_funcion_sen(6, 0, 2000, np.pi/2, N, fs)
-plt.subplot(1, 2, 2)
+# #-----------SEÑAL AMPLIFICADA Y DESFASADA PI/2 (de amplitud 1 a 2)-----------#
+tt1, xx1 = mi_funcion_sen(2, 0, 2000, np.pi/2, N, fs)
+plt.subplot(1, 3, 2)
 plt.plot(tt1, xx1, color='rebeccapurple')
-plt.title('Señal Senoidal')
+plt.title('Señal Senoidal Modificada')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
 plt.grid(True)
 plt.xlim(0, 0.003)
-plt.show()
+plt.tight_layout()
 
+plt.subplot(1, 3, 3)
+plt.plot(tt, xx, color='orchid')
+plt.plot(tt1, xx1, color='rebeccapurple')
+plt.title('Comparacion de Señales')
+plt.xlabel('Tiempo [s]')
+plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
+plt.xlim(0, 0.003)
 plt.tight_layout()
 plt.show()
 
@@ -55,15 +63,30 @@ plt.show()
 tt, xx = mi_funcion_sen(1, 0, 2000, 0, N, fs)
 ttm, xxm = mi_funcion_sen(1, 0, 1000, 0, N, fs)
 modulada = xx*xxm
-plt.figure(2)
-plt.plot(tt, xx, color='skyblue')
-plt.plot(ttm, xxm, color='lightseagreen')
-plt.plot(ttm, modulada, color='pink', linewidth=2)
+
+plt.figure(2, figsize=(12,5))
+plt.subplot(1, 2, 1)
+plt.plot(tt, xx, label='Portadora', color='skyblue')
+plt.plot(ttm, xxm, label='Moduladora', color='lightseagreen')
+plt.plot(ttm, modulada, label='Modulada', color='pink', linewidth=2)
+plt.xticks(rotation=45)
 plt.title('Señal Modulada y sus partes')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
 plt.grid(True)
 plt.xlim(0, 0.0017)
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+plt.subplot(1, 2, 2)
+plt.plot(ttm, modulada, label='Modulada', color='pink', linewidth=2)
+plt.plot(ttm, xxm, color='gold', linestyle='--', label='Envolvente')
+plt.plot(ttm, -xxm, color='gold', linestyle='--')
+plt.title('Señal Modulada y su envolvente')
+plt.xlabel('Tiempo [s]')
+plt.ylabel('Amplitud [Volts]')
+plt.grid(True)
+plt.xlim(0, 0.003)
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 plt.tight_layout()
 plt.show()
@@ -75,13 +98,14 @@ pot75 = potencia*0.75
 amplitudRecortada = np.sqrt(pot75*2)
 senoidalRecortada = np.clip(xxR, -amplitudRecortada, amplitudRecortada)
 plt.figure(3)
-plt.plot(ttR, xxR, color='rebeccapurple')
-plt.plot(ttR, senoidalRecortada, color='skyblue')
+plt.plot(ttR, xxR, label='Señal Original', color='rebeccapurple')
+plt.plot(ttR, senoidalRecortada,label='Señal Recortada', color='skyblue')
 plt.title('Señal Recortada en un 75% de su Potencia')
 plt.xlabel('Tiempo [s]')
 plt.ylabel('Amplitud [Volts]')
 plt.grid(True)
 plt.xlim(0, 0.003)
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 #-----------------SEÑAL CUADRADA-----------------#
 TsC = 1/fs
@@ -98,7 +122,6 @@ plt.grid(True)
 plt.xlim(0, 0.0010)
 
 plt.tight_layout()
-plt.show()
 
 #-----------------PULSO RECTANGULAR-----------------#
 TsP = 0.01   # 10 ms
@@ -110,7 +133,6 @@ pulso = np.where((t >= -TsP/2) & (t <= TsP/2), 1, 0)#vale 1 entre -T/2 y T/2, 0 
 #--> True (1)
 # --> False (0)
 
-# Graficar
 plt.subplot(1, 2, 2)
 plt.plot(t*1000, pulso, drawstyle='steps-post',color='deeppink' ) 
 #hice t*1000 para que este en ms
