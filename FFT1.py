@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.fft import fft
+import scipy.signal as sig
+win = sig.windows
+
 
 def sen( vmax, dc, ff, ph, nn, fs): 
 
@@ -131,85 +134,99 @@ plt.grid(True)
 plt.xlim([0, fs/2])
 
 # %%
-N = 64   # longitud de la ventana
-freqsVentanas = np.arange(0, N) * df
+Nbig=10000
+Nv=31 #si ponia 1000 no se veia nada
+
+#longitud de la ventana
+freqsWin = np.linspace(-fs/2, fs/2, Nbig) 
 
 #Mis ventanitas
-flattop = np.flattop(N)
-hamming = np.hamming(N)
-blackmanHarris = np.blackmanharris(N)
+flattop = win.flattop(Nv)
+hamming = win.hamming(Nv)
+blackmanHarris = win.blackmanharris(Nv)
+rectangular = win.boxcar(Nv) 
+gaussian = win.gaussian(Nv, std=0.4*Nv)
 
-# FFT
-FFTflattop = fft(flattop)
-FFThamming = fft(hamming)
-FFTblackmanHarris = fft(blackmanHarris)
+#agrego zero padding asi se ve mas lisito todo y se ve como en el holton
+def ffPadding(x, Np, fs): #arme funcion que aplica zero padding a una señal x y calcula su FFT, asi no tengo que hacerlo 40 veces para cada ventana
 
+#x: señal original
+#N: cantidad total de puntos (incluye padding)
+#fs: frecuencia de muestreo
+    zeroPadding = np.zeros(Np)
+    zeroPadding[:len(x)] = x 
+    FFTpadding = fft(zeroPadding)
+    absFFTpadded = np.abs(FFTpadding)
+    ffPadded = np.arange(Np) * (fs / Np)
+    return ffPadded, absFFTpadded
+#ffPadded: eje de frecuencia [Hz]
+#absFFTpadded: módulo de la FFT con padding
+
+# FFT con padding
+_, FFTflattop = ffPadding(flattop, Nbig, fs)
+_, FFThamming = ffPadding(hamming, Nbig, fs)
+_, FFTblackmanHarris = ffPadding(blackmanHarris, Nbig, fs)
+_, FFTrectangular = ffPadding(rectangular, Nbig, fs)
+_, FFTgaussian = ffPadding(gaussian, Nbig, fs)
+
+
+#funcion para normalizar y pasar a dB (asi no lo hago 40 veces tmb)
+def dB(W):
+    return 20 * np.log10(np.abs(np.fft.fftshift(W)) / np.max(np.abs(W)))
+#el shift me pone elcero en el centro, y el max hace que mi lobulo principal tenga su maximo en 0dB
 
 
 plt.figure(6)
-plt.plot(freqsVentanas, FFThamming, label="Rectangular")
+plt.plot(freqsWin, dB(FFTgaussian), label="Gaussian", color="lightgreen")
+plt.plot(freqsWin, dB(FFTflattop), label="Flattop", color="skyblue")
+plt.plot(freqsWin, dB(FFThamming), label="Hamming", color="hotpink")
+plt.plot(freqsWin, dB(FFTblackmanHarris), label="Blackman-Harris", color="mediumvioletred")
+plt.plot(freqsWin, dB(FFTflattop), label="Flattop", color="purple")
 
-plt.title("Espectro de las ventanas")
-plt.xlabel("ω [rad/muestra]")
-plt.ylabel("|W(ω)| [dB]")
-
+plt.title("Respuesta en frecuencia de ventanas")
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel(r"$|W(e^{j\omega})|$ [dB]") #Si, busque una forma elegante de decir "magnitud de la respuesta en frecuencia de la ventana"
+plt.ylim([-60, 5])
 plt.grid(True)
 plt.legend()
-np
 plt.show()
 
-#hacer lo de SNR
+
 
 # %%
-# Parámetros
-N = 64   # longitud de la ventana
-freqsVentanas = np.arange(0, N) * df
+#SNR
 
-#Mis ventanitas
-flattop = np.flattop(N)
-hamming = np.hamming(N)
-blackmanHarris = np.blackmanharris(N)
+tt, señal = sen(1, 0, ff, 0, N, fs)
 
-# FFT
-FFTflattop = fft(flattop)
-FFThamming = fft(hamming)
-FFTblackmanHarris = fft(blackmanHarris)
+np.random.seed(0)  
+ruido = np.random.normal(0, 1, N)# Ruido blanco gaussiano :O
+#genero N muestras de una distribución normal con media=0, desviacion estandar=1 y ademas seed(0) me asegura que el ruido sea reproducible cada vez que corro mi codigo
 
-# Eje de frecuencia en radianes (de -pi a pi)
-omega = np.linspace(-np.pi, np.pi, Nfft)
+señalConRuidito = señal + ruido
 
-# Normalización y paso a dB
-def to_dB(W):
-    return 20*np.log10(np.abs(np.fft.fftshift(W)) / np.max(np.abs(W)))
+potenciaSenal = np.mean(señal**2)
+potenciaRuido = np.mean(ruido**2)
+SNRdB = 10 * np.log10(potenciaSenal/potenciaRuido)
 
-# ----------------- VENTANAS EN TIEMPO ----------------- #
-plt.figure(4)
-plt.plot(w_rect, "b", label="Rectangular")
-plt.plot(w_hamming, "g", label="Hamming")
-plt.plot(w_hann, color="orange", label="Hann")
-plt.plot(w_blackman, "r", label="Blackman")
-plt.title("Ventanas en el tiempo")
-plt.xlabel("n")
-plt.ylabel("w[n]")
+print("SNR [dB]:", SNRdB)
+
+FFTseñalConRuidito = fft(señalConRuidito)
+absFFTseñalConRuidito = np.abs(FFTseñalConRuidito)
+
+plt.figure(7)
+plt.plot(freqs, 20 * np.log10(absFFT), label="Señal limpia", color="mediumvioletred")
+plt.plot(freqs, 20 * np.log10(absFFTseñalConRuidito), label="Señal con ruido", color="deepskyblue")
+plt.title("Comparación espectral de señal vs señal con ruido")
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel("Magnitud [dB]")
 plt.grid(True)
 plt.legend()
-
-# ----------------- ESPECTRO EN FRECUENCIA ----------------- #
-plt.figure(5)
-plt.plot(omega, to_dB(Wrect), "b", label="Rectangular")
-plt.plot(omega, to_dB(Whamming), "g", label="Hamming")
-plt.plot(omega, to_dB(Whann), color="orange", label="Hann")
-plt.plot(omega, to_dB(Wblackman), "r", label="Blackman")
-plt.title("Espectro de las ventanas")
-plt.xlabel("ω [rad/muestra]")
-plt.ylabel("|W(ω)| [dB]")
-plt.ylim([-80, 5])
-plt.grid(True)
-plt.legend()
-
+plt.xlim([0, fs/2])
 plt.show()
 
 
+
+# %%
 
 
 
