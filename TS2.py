@@ -183,7 +183,16 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-
+#------------Comprobación entre convolucion y lfilter------------#
+plt.figure(12)
+plt.plot(t, conv, label="Salida con convolucion", color="purple", linewidth=3)
+plt.plot(t, salidas[0][3], label="Salida con lfilter", color="powderblue", linestyle='--')
+plt.xlabel("Tiempo [s]")
+plt.ylabel("Amplitud")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
 
 # %%
 
