@@ -77,7 +77,7 @@ plt.plot(t, salidas[0][3], label="Salida", color="mediumvioletred")
 
 plt.title("Senoidal 2 kHz")
 plt.xlabel("Tiempo [s]")
-plt.ylabel("Amplitud")
+plt.ylabel("Amplitud [V]")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -103,7 +103,7 @@ plt.plot(t, salidas[2][3], label="Salida", color="deeppink")
 
 plt.title("Modulada")
 plt.xlabel("Tiempo [s]")
-plt.ylabel("Amplitud")
+plt.ylabel("Amplitud [V]")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -116,7 +116,7 @@ plt.plot(t, salidas[3][3], label="Salida", color="mediumpurple")
 
 plt.title("Recortada")
 plt.xlabel("Tiempo [s]")
-plt.ylabel("Amplitud")
+plt.ylabel("Amplitud [V]")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -129,7 +129,7 @@ plt.plot(tq, salidas[4][3], label="Salida", color="mediumorchid")
 
 plt.title("Cuadrada")
 plt.xlabel("Tiempo [s]")
-plt.ylabel("Amplitud")
+plt.ylabel("Amplitud [V]")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -142,12 +142,11 @@ plt.plot(tp, salidas[5][3], label="Salida", color="darkturquoise")
 
 plt.title("Pulso")
 plt.xlabel("Tiempo [s]")
-plt.ylabel("Amplitud")
+plt.ylabel("Amplitud [V]")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
-
 
 
 #---------------respuesta al impulso h[n]---------------#
@@ -186,22 +185,139 @@ plt.show()
 
 
 
+# %%
+
 #--------------------Punto 2--------------------#
-print("\n--- Resultados punto 2 ---")
-f = 2000
-Omega = 2*np.pi*f/fs  # frecuencia digital
-print(f"Frecuencia analizada: f={f} Hz, Omega={Omega:.4f} rad")
 
-# (a) y[n] = x[n] + 3x[n-10]
-Ha = 1 + 3*np.exp(-1j*10*Omega)
-mag_a, phase_a = np.abs(Ha), np.angle(Ha)
-print(f"(a) FIR: |H|={mag_a:.4f}, ∠H={phase_a:.4f} rad")
 
-# (b) y[n] = x[n] + 3y[n-10]
-Hb = 1 / (1 - 3*np.exp(-1j*10*Omega))
-mag_b, phase_b = np.abs(Hb), np.angle(Hb)
-print(f"(b) IIR: |H|={mag_b:.4f}, ∠H={phase_b:.4f} rad")
-print("Nota: este sistema es inestable (|3|>1).")
+#--------------------A: y[n] = x[n] + 3 x[n-10]--------------------#
+hA = np.zeros(11)
+hA[0] = 1
+hA[10] = 3 #esto esta asi porque como para la delta solo vale 1 en n=0, mi sistema tiene solo esos dos valores que puse
+#la salida depende solo de la entrada, asi que al darle un pulso (delta) la respuesta al impulso es 
+#exactamente los coeficientes de entrada
 
+
+# salida con el sen
+salidaA = np.convolve(x, hA)[:N]
+
+plt.figure(9)
+plt.subplot(2,1,1)
+plt.plot(t, salidaA,color="salmon")
+plt.title('Sistema A - Salida')
+plt.xlabel("Tiempo [s]")
+plt.ylabel("Amplitud [V]")
+plt.tight_layout()
+plt.grid(True)
+
+plt.subplot(2,1,2) 
+plt.plot(range(len(hA)), hA,'o', color='mediumvioletred')
+plt.title('Sistema A - Respuesta al impulso')
+plt.xlabel('n (muestras)')
+plt.ylabel('hA[n]')
+plt.grid(True)
+plt.tight_layout()
 plt.show()
+
+
+# --- Sistema B: y[n] = x[n] + 3 y[n-10] ---
+aB = np.zeros(11)
+aB[0] = 1
+aB[10] = -3
+bB = np.array([1]) #porque no hay nadaen x
+
+#respuesta al impulso
+delta = np.zeros(N)
+delta[0] = 1
+hB= sig.lfilter(bB, aB, delta)
+#la salida depende tambien de salidas pasadas, así que al darle un pulso (delta) la respuesta al impulso
+#sigue retroalimentándose y hay que calcularla con el lfilter
+
+# salida para la senoidal (simulación)
+hBcortada = hB[:30]
+salidaB = np.convolve(x, hBcortada)[:N] #lo corte asi no se ve como explota todo
+#las lineas de codigo comentadas son como estaba originalmente (graficaba una especie de linea que iba hacia arriba)
+#salidaB = np.convolve(x, hB)[:N]
+
+plt.figure(10)
+plt.subplot(2,1,1)
+plt.plot(t, salidaB, color="skyblue")
+plt.title('Sistema B - Salida')
+plt.xlabel("Tiempo [s]")
+plt.ylabel("Amplitud [V]")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.subplot(2,1,2) 
+plt.plot(hB, label='respuesta al impulso', color="blueviolet")
+plt.title('Sistema B - Respuesta al impulso')
+plt.xlabel('n (muestras)')
+plt.ylabel('hB[n]')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+#Energia de las salidas
+energiaA = energia(salidaA)
+energiaB = energia(salidaB)
+
+# Potencia de las salidas
+potenciaA = potencia(salidaA)
+potenciaB = potencia(salidaB)
+
+print("Energia salida A:", energiaA)
+print("Potencia salida A:", potenciaA)
+print("Energia salida B:", energiaB)
+print("Potencia salida B:", potenciaB)
+
+
+# %%
+
+#--------------------BONUS--------------------#
+
+# Parámetros de la senoidal (flujo)
+Qn = 20   # amplitud de la onda de flujo ml/s
+dc = 80   # flujo medio equivalente a presión base en mmHg
+ff = 1     #frecuencia Hz
+ph = 0       #fase inicial
+fs = 100     #frecuencia de muestreo Hz
+C = 1.5     # ml/mmHg
+R = 1.0     # mmHg·s/ml
+dt = 1/fs   # paso temporal consistente con la señal
+
+t, Q = sen(Qn, dc, ff, ph, N, fs)
+
+P = np.zeros(N) #es un array donde almaceno la presion arterial en cada instante
+P[0] = 80  # (valor típico de presión sistólica inicial o presión de referencia)
+
+#metodo de Euler para discretizar la ecuacion diferencial
+for n in range(N-1):#itero de la muestra 0 hasta la penúltima N-1
+    P[n+1] = P[n] + dt*(Q[n] - P[n]/R)/C
+
+#en cada paso la presion aumenta si el flujo Q[n] es mayor que P[n]/R, y disminuye si es menor
+
+plt.figure(11)
+plt.plot(t, Q, label='Flujo Q(t)', color='skyblue')
+#Q es la entrada del sistema, simula el flujo sanguineo pulsatil (un latido por segundo)
+plt.plot(t, P, label='Presión arterial P(t)', color='mediumvioletred')
+#P es la salida, es la presion arterial que responde al flujo
+plt.xlabel('Tiempo [s]')
+plt.ylabel('Presion[mmHg] / Flujo[ml/s]')
+plt.title('Modelo Windkessel - Discretizado con Euler')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
 
