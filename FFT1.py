@@ -174,7 +174,7 @@ _, FFTgaussian = ffPadding(gaussian, Nbig, fs)
 def dB(W):
     return 20 * np.log10(np.abs(np.fft.fftshift(W)) / np.max(np.abs(W)))
 #el shift me pone elcero en el centro, y el max hace que mi lobulo principal tenga su maximo en 0dB
-
+#cada ventana tiene su propio valor medio (donde estal el maximo) por eso uso el shift
 
 plt.figure(6)
 plt.plot(freqsWin, dB(FFTgaussian), label="Gaussian", color="lightgreen")
