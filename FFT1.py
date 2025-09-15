@@ -24,7 +24,7 @@ df=fs/N # resolución espectral
 freqs = np.arange(0, N) * df
 plt.figure(1)
 
-#-----------------N/4-----------------#
+#-----------------N/4*df-----------------#
 ff=(N/4)*df
 _, yy = sen(1, 0, ff, 0, N, fs)
 #el _, me ignora tt, porque no lo necesito
@@ -43,13 +43,14 @@ absFFT1=np.abs(FFT1)
 plt.stem(freqs, absFFT1, linefmt="lightseagreen", markerfmt="o", basefmt="lightseagreen", label="(N/4 + 1)df")      
 
 
-#-----------------del medio-----------------#
+#-----------------(N/4 + 0,5)*df-----------------#
 ff2=(ff+ff1)/2
 _, yy2 = sen(1, 0, ff2, 0, N, fs)
 FFT2=fft(yy2)
 absFFT2=np.abs(FFT2)
 #angleFFT2=np.angle(FFT2)
 plt.stem(freqs, absFFT2, linefmt="deepskyblue", markerfmt="o", basefmt="deepskyblue", label="medio")
+
 
 
 plt.title("FFT de senoidales")
