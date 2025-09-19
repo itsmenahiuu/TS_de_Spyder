@@ -67,7 +67,7 @@ N=1000
 R=200
 fs=N
 frecRandom= np.random.uniform(low=-2, high=2, size=R) #ojo que es un vector
-frecRandom=frecRandom.reshape((N,R))
+frecRandom = frecRandom.reshape(1, R)
 
 def SNRvarianza(señal, SNRdb):
     # Potencia de la señal
@@ -120,80 +120,161 @@ plt.show()
 
 
 
+
+
 # %%
-#hecho por augusto
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy.fft import fft
-import scipy.signal as sp
+import scipy.signal as sig
+win = sig.windows
+
+# Parámetros
+N = 1000      #muestras
+R = 200       #realizaciones
+fs = N        #frecuencia de muestreo 
+f0 = fs / 4   #frecuencia de la senoidal
+resolucionEspectral=fs/N
+frecRandom= np.random.uniform(low=-2, high=2, size=R)*resolucionEspectral #ojo que es un vector
+frecRandom = frecRandom.reshape(1, R)
+
+#tiempo en vector y matriz
+Ts = 1/fs
+t = np.linspace(0, (N-1)*Ts, N)            #vector de tiempo 
+t_mat = np.tile(t.reshape(N, 1), (1, R))   #matriz 1000x200 (columnas = realizaciones)
+
+#señal senoidal en matriz
+a0 = np.sqrt(2)
+señalMatriz = a0 * np.sin(2*np.pi*(f0+frecRandom)*t_mat)   # matriz 1000x200
+
+def SNRvarianza(señal, SNRdb):
+    potSeñal = np.mean(señal**2)
+    return potSeñal / (10**(SNRdb / 10))
+
+Rvar = SNRvarianza(señalMatriz, 10)
+
+#rudio pero matriz
+ruidoMatriz = np.random.normal(0, np.sqrt(Rvar), (N, R))
+
+#señal+ruido
+señalConRuidoMatriz = señalMatriz + ruidoMatriz
 
 
-def gen_señal (fs, N, amp, frec, fase, v_medio, SNR):
-    
-    t_final = N * 1/fs
-    tt = np.arange (0, t_final, 1/fs)
-    
-    frec_rand = np.random.uniform (-2, 2)
-    frec_omega = frec/4 + frec_rand * (frec/N)
-    
-    ruido = np.zeros (N)
-    for k in np.arange (0, N, 1):
-        pot_snr = amp**2 / (2*10**(SNR/10))                                 
-        ruido[k] = np.random.normal (0, pot_snr)
-    
-    x = amp * np.sin (frec_omega * tt) + ruido
-    
-    return tt, x
+#RECTANGULAR
+rect = np.ones((N,1))
+señalRuidosaRect = señalConRuidoMatriz * rect  
+señalRuidosaRectFFT = fft(señalRuidosaRect, axis=0)/N
+espectroRect = 10*np.log10(2*np.abs(señalRuidosaRectFFT)**2)
 
-def eje_temporal (N, fs):
-    
-    Ts = 1/fs
-    t_final = N * Ts
-    tt = np.arange (0, t_final, Ts)
-    return tt
+a2 = 10*np.log10((np.abs(señalRuidosaRectFFT[N//4,:])**2)*2)
 
 
-def func_senoidal (tt, frec, amp, fase = 0, v_medio = 0):
-    
-    xx = amp * np.sin (2 * np.pi * frec * tt + fase) + v_medio # tt es un vector, por ende la función sin se evalúa para cada punto del mismo
-    # xx tendrá la misma dimensión que tt
-    return xx
+#HAMMING
+hamming = win.hamming(N).reshape(N,1)
+señalRuidosaHamming = señalConRuidoMatriz * hamming
+señalRuidosaHammingFFT = fft(señalRuidosaHamming, axis=0)/N
+espectroHamming = 10*np.log10(2*np.abs(señalRuidosaHammingFFT)**2)
 
-SNR = 10 # SNR en dB
-amp_0 = np.sqrt(2) # amplitud en V
-N = 1000
-fs = 1000
-df = fs / N # Hz, resolución espectral
+a3 = 10*np.log10((np.abs(señalRuidosaHammingFFT[N//4,:])**2)*2)
 
-nn = np.arange (N) # vector adimensional de muestras
-ff = np.arange (N) * df # vector en frecuencia al escalar las muestras por la resolución espectral
-tt = eje_temporal (N = N, fs = fs)
+#HANN
+hann = win.hann(N).reshape(N,1)
+señalRuidosaHann = señalConRuidoMatriz * hann
+señalRuidosaHannFFT = fft(señalRuidosaHann, axis=0)/N
+espectroHann = 10*np.log10(2*np.abs(señalRuidosaHannFFT)**2)
 
-s_1 = func_senoidal (tt = tt, amp = amp_0, frec = fs/4)
+a4 = 10*np.log10((np.abs(señalRuidosaHannFFT[N//4,:])**2)*2)
 
-pot_ruido = amp_0**2 / (2*10**(SNR/10))        
-#print (f"Potencia de SNR {pot_snr:3.1f}")   
-                      
-ruido = np.random.normal (0, np.sqrt(pot_ruido), N)
-var_ruido = np.var (ruido)
-print (f"Potencia de ruido -> {var_ruido:3.3f}")
+#BLACKMAN
+blackman = win.blackman(N).reshape(N,1)
+señalRuidosaBlack = señalConRuidoMatriz * blackman
+señalRuidosaBlackFFT = fft(señalRuidosaBlack, axis=0)/N
+espectroBlackman = 10*np.log10(2*np.abs(señalRuidosaBlackFFT)**2)
 
-x_1 = s_1 + ruido # modelo de señal
-
-R = fft (ruido)
-S_1 = fft (s_1)
-X_1ruido = fft (x_1)
-# print (np.var(x_1))
+a5 = 10*np.log10((np.abs(señalRuidosaBlackFFT[N//4,:])**2)*2)
 
 
-plt.plot (ff, 10*np.log10(np.abs(X_1ruido)**2), color='orange', label='X_1')
-#plt.plot (ff, 20*np.log10(np.abs(S_1)), color='black', label='S_1')
-#plt.plot (ff, 20*np.log10(np.abs(R)), label='Ruido')
-plt.grid (True)
-plt.legend ()
-plt.show ()
+# señalConRuidoFFT = fft(señalConRuidoMatriz, axis=0)/N #(osea sin ventanita)
+# a1 = 10*np.log10((np.abs(señalConRuidoFFT[N//4,:])**2)*2)
 
 
-# %%
+#para graficar me armo el eje de frecuencias
+freqs = np.linspace(0, fs, N)
+
+plt.figure(1)
+plt.plot(freqs, espectroRect)
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel("Amplitud [dB]")
+plt.title("Ventana Rectangular")
+plt.xlim([0, fs/2])
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt.figure(2)
+plt.plot(freqs, espectroHamming)
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel("Amplitud [dB]")
+plt.title("Ventana Hamming")
+plt.xlim([0, fs/2])
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+plt.figure(3)
+plt.plot(freqs, espectroHann)
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel("Amplitud [dB]")
+plt.title("Ventana Hann")
+plt.xlim([0, fs/2])
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+
+plt.figure(4)
+plt.plot(freqs, espectroBlackman)
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel("Amplitud [dB]")
+plt.title("Ventana Blackman")
+plt.xlim([0, fs/2])
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+
+# plt.figure(5)
+# plt.plot(señalConRuidoMatriz[0, :], label="Fila 0")
+# plt.plot(señalConRuidoMatriz[N//4, :], label=f"Fila {N//4}")
+# plt.plot(señalConRuidoMatriz[N//2, :], label=f"Fila {N//2}")
+# plt.plot(señalConRuidoMatriz[N-1, :], label=f"Fila {N-1}")
+
+# plt.title("Filitas de la matriz")
+# plt.xlabel("Realizacion (columna)")
+# plt.ylabel("Amplitud")
+# plt.legend()
+# plt.grid()
+# plt.tight_layout()
+# plt.show()
+
+
+plt.figure(6)
+bins = 10
+plt.hist(a2,label='Rectangular', bins = bins, color = 'cornflowerblue')
+plt.hist(a3,label='Hamming', alpha = 0.7, bins = bins, color = 'hotpink')
+plt.hist(a4,label='Hann', alpha = 0.5, bins = bins, color = 'limegreen')
+plt.hist(a5,label='Blackman', alpha = 0.3, bins = bins, color = 'darkorchid')
+plt.legend()
+plt.show()
+
+
+
 
 
