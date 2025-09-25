@@ -41,6 +41,43 @@ plt.grid()
 plt.show()
 
 
+#calculo paso en frecuencia y potencia total
+df = freqW[1] - freqW[0]                 #paso en frecuencia (Hz)
+potTotal = np.sum(ecgW) * df            #potencia total (integral discreta)
+
+#potencia acumulada con el cumsum
+potAcum = np.cumsum(ecgW) * df          #integral acumulada desde 0 Hz
+
+# frecuencia donde se alcanza el 95% de la potencia
+nivel95 = 0.95 * potTotal
+indice95 = np.where(potAcum >= nivel95)[0][0]   # primer índice donde se supera el 95%
+frec95 = freqW[indice95]
+
+#para 97%
+nivel97 = 0.97 * potTotal
+indice97 = np.where(potAcum >= nivel97)[0][0]
+frec97 = freqW[indice97]
+
+#para 99%
+nivel99 = 0.99 * potTotal
+indice99 = np.where(potAcum >= nivel99)[0][0]
+frec99 = freqW[indice99]
+
+print("=====================================")
+print(f"Potencia total: {potTotal:.4e} V^2")
+print(f"BW con 95%: {frec95:.2f} Hz")
+print(f"BW con 97%: {frec97:.2f} Hz")
+print(f"BW con 99%: {frec99:.2f} Hz")
+print("=====================================")
+
+
+
+
+
+
+
+
+
 # #periodogram
 # freqP, ecgP = sig.periodogram(ecg_one_lead, fs=fs_ecg)
 
