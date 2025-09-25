@@ -95,15 +95,15 @@ Omega5 = np.mean(freqOmega5) #estimador de la frecuencia
 
 #-------PARA EL ESTIMADOR DE AMPLITUD---------#
 
-a2_lin = np.sqrt(10**(a2/10))  # paso de dB a valor RMS lineal
+a2_lin = np.sqrt(10**(a2/10))  # paso de dB a valor a lineal
 a3_lin = np.sqrt(10**(a3/10))
 a4_lin = np.sqrt(10**(a4/10))
 a5_lin = np.sqrt(10**(a5/10))
 
 #--------------- Rectangular ---------------#
 a2prom = np.mean(a2_lin) #promedio de las amplitudes estimadas
-sesgo_a2 = a2prom - a0    #sesgo = valor medio - valor real
-var_a2 = np.var(a2_lin)   #varianza = promedio de (x - media)^2
+sesgo_a2 = a2prom - a0  
+var_a2 = np.var(a2_lin)   
 
 #--------------- Hamming -------------------#
 a3prom = np.mean(a3_lin)
@@ -142,13 +142,22 @@ var_f5 = np.var(freqOmega5)
 
 
 
-print("\nTABLA DE RESULTADOS (SNR=10 dB) \n")
-print("VENTANA        SESGO_AMP   VAR_AMP     SESGO_FREQ   VAR_FREQ")
-print(f"Rectangular   {sesgo_a2:.4f}    {var_a2:.4f}    {sesgo_f2:.4f}    {var_f2:.4f}")
-print(f"Hamming       {sesgo_a3:.4f}    {var_a3:.4f}    {sesgo_f3:.4f}    {var_f3:.4f}")
-print(f"Flattop       {sesgo_a4:.4f}    {var_a4:.4f}    {sesgo_f4:.4f}    {var_f4:.4f}")
-print(f"BlackmanH     {sesgo_a5:.4f}    {var_a5:.4f}    {sesgo_f5:.4f}    {var_f5:.4f}")
+print("ESTIMADOR DE AMPLITUD SNR:10dB")
+print("--------------------------------")
+print("VENTANA         SESGO_AMP      VAR_AMP")
+print(f"Rectangular     {sesgo_a2:.4f}      {var_a2:.4f}")
+print(f"Hamming         {sesgo_a3:.4f}      {var_a3:.4f}")
+print(f"Flattop         {sesgo_a4:.4f}      {var_a4:.4f}")
+print(f"Blackman-Harris {sesgo_a5:.4f}      {var_a5:.4f}")
 
+# ---------- TABLA FRECUENCIA ----------
+print("\nESTIMADOR DE FRECUENCIA SNR:10dB")
+print("---------------------------------")
+print("VENTANA         SESGO_FREQ     VAR_FREQ")
+print(f"Rectangular     {sesgo_f2:.4f}      {var_f2:.4f}")
+print(f"Hamming         {sesgo_f3:.4f}      {var_f3:.4f}")
+print(f"Flattop         {sesgo_f4:.4f}      {var_f4:.4f}")
+print(f"Blackman-Harris {sesgo_f5:.4f}      {var_f5:.4f}")
 
 #para graficar me armo el eje de frecuencias
 freqs = np.linspace(0, fs, N)
@@ -229,17 +238,34 @@ plt.show()
 # %%
 
 #HISTOGRAMAS
-plt.figure(6)
-bins = 10
-plt.hist(a2,label='Rectangular', bins = bins, color = 'cornflowerblue')
-plt.hist(a3,label='Hamming', alpha = 0.7, bins = bins, color = 'hotpink')
-plt.hist(a5,label='Blackman Harris', alpha = 0.5, bins = bins, color = 'indigo')
-plt.hist(a4,label='Flattop', alpha = 0.6, bins = bins, color = 'limegreen')
+bins = 30
+
+
+# ----------HISTOGRAMA DE AMPLITUD---------- #
+plt.figure(7)
+plt.hist(a2_lin,label='Rectangular', bins = bins, color = 'cornflowerblue')
+plt.hist(a3_lin,label='Hamming', alpha = 0.7, bins = bins, color = 'hotpink')
+plt.hist(a5_lin,label='Blackman Harris', alpha = 0.5, bins = bins, color = 'indigo')
+plt.hist(a4_lin,label='Flattop', alpha = 0.6, bins = bins, color = 'limegreen')
+plt.axvline(a0, color="k", linestyle="--", label="Amplitud real")
 plt.legend()
+plt.grid(True)
+plt.show()
+
+# ----------HISTOGRAMA DE FRECUENCIA---------- #
+plt.figure(8)
+plt.hist(freqOmega2,label='Rectangular', bins = bins, color = 'cornflowerblue')
+plt.hist(freqOmega3,label='Hamming', alpha = 0.7, bins = bins, color = 'hotpink')
+plt.hist(freqOmega4,label='Flattop', alpha = 0.6, bins = bins, color = 'limegreen')
+plt.hist(freqOmega5,label='Blackman Harris', alpha = 0.5, bins = bins, color = 'indigo')
+plt.axvline(f0, color="k", linestyle="--", label="Frecuencia real")
+plt.legend()
+plt.grid(True)
 plt.show()
 
 
-## %%
+
+# %%
 #BONUS 
 
 N_zeropad = N * 4
