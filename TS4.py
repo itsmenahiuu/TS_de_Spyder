@@ -40,8 +40,10 @@ señalConRuidoMatriz = señalMatriz + ruidoMatriz
 señalConRuidoFFT = fft(señalConRuidoMatriz, axis=0)/N #(osea sin ventanita)
 espectroRect = 10*np.log10(2*np.abs(señalConRuidoFFT)**2)
 
-a2 = 10*np.log10((np.abs(señalConRuidoFFT[N//4,:])**2)*2) #Estimador de amplitud
+#Estimador de amplitud
+a2 = 10*np.log10((np.abs(señalConRuidoFFT[N//4,:])**2)*2) 
 
+#estimador de la frecuencia
 OmegaInd2 = np.argmax(np.abs(señalConRuidoFFT), axis=0)  #indice del bin de frecuencia donde aparece el pico maximo
 freqOmega2 = OmegaInd2 * (fs/N) # paso de indice a frecuencia en Hz
 Omega2 = np.mean(freqOmega2)  #estimador de la frecuencia
@@ -56,11 +58,9 @@ señalRuidosaHamming = señalConRuidoMatriz * hamming
 señalRuidosaHammingFFT = fft(señalRuidosaHamming, axis=0)/N
 espectroHamming = 10*np.log10(2*np.abs(señalRuidosaHammingFFT)**2)
 
-a3 = 10*np.log10((np.abs(señalRuidosaHammingFFT[N//4,:])**2)*2) #Estimador de amplitud
+ #Estimador de amplitud
+a3 = 10*np.log10((np.abs(señalRuidosaHammingFFT[N//4,:])**2)*2) 
 
-OmegaInd3 = np.argmax(np.abs(señalRuidosaHammingFFT), axis=0)  #indice del bin de frecuencia donde aparece el pico maximo
-freqOmega3 = OmegaInd3 * (fs/N) # paso de indice a frecuencia en Hz
-Omega3 = np.mean(freqOmega3) #estimador de la frecuencia
 
 #---------------FLATTOP---------------#
 flattop = win.flattop(N).reshape(N,1)
@@ -68,11 +68,9 @@ señalRuidosaFlattop = señalConRuidoMatriz * flattop
 señalRuidosaFlattopFFT = fft(señalRuidosaFlattop, axis=0)/N
 espectroFlattop = 10*np.log10(2*np.abs(señalRuidosaFlattopFFT)**2)
 
-a4 = 10*np.log10((np.abs(señalRuidosaFlattopFFT[N//4,:])**2)*2) #Estimador de amplitud
+#Estimador de amplitud
+a4 = 10*np.log10((np.abs(señalRuidosaFlattopFFT[N//4,:])**2)*2) 
 
-OmegaInd4 = np.argmax(np.abs(señalRuidosaFlattopFFT), axis=0)  #indice del bin de frecuencia donde aparece el pico maximo
-freqOmega4 = OmegaInd4 * (fs/N) # paso de indice a frecuencia en Hz
-Omega4 = np.mean(freqOmega4) #estimador de la frecuencia
 
 #---------------BLACKMANHARRIS---------------#
 blackmanH = win.blackmanharris(N).reshape(N,1)
@@ -81,10 +79,6 @@ señalRuidosaBlackHFFT = fft(señalRuidosaBlackH, axis=0)/N
 espectroBlackmanH = 10*np.log10(2*np.abs(señalRuidosaBlackHFFT)**2)
 
 a5 = 10*np.log10((np.abs(señalRuidosaBlackHFFT[N//4,:])**2)*2) #Estimador de amplitud
-
-OmegaInd5 = np.argmax(np.abs(señalRuidosaBlackHFFT), axis=0)  #indice del bin de frecuencia donde aparece el pico maximo
-freqOmega5 = OmegaInd5 * (fs/N) # paso de indice a frecuencia en Hz
-Omega5 = np.mean(freqOmega5) #estimador de la frecuencia
 
 
 # señalConRuidoFFT = fft(señalConRuidoMatriz, axis=0)/N #(osea sin ventanita)
@@ -121,28 +115,63 @@ sesgo_a5 = a5prom - a0
 var_a5 = np.var(a5_lin)
 
 
-#-------PARA EL ESTIMADOR DE FRECUENCIA---------#
 
-#--------------- Rectangular ---------------#
-sesgo_f2 = Omega2 - f0                              # sesgo de frecuencia
-var_f2 = np.var(freqOmega2)                              # varianza de frecuencia
+#---------------------------ESTIMADOR DE FRECUENCIA---------------------------#
 
-#--------------- Hamming -------------------#
-sesgo_f3 = Omega3 - f0
-var_f3 = np.var(freqOmega3)
+# Vector de frecuencias (Hz)
+frecuencias = np.fft.fftfreq(N, d=1/fs)
+frecuenciasPositivas = frecuencias[:N//2]   # solo la mitad positiva asi no tengo los dos picpos
 
-#--------------- Flattop -------------------#
-sesgo_f4 = Omega4 - f0
-var_f4 = np.var(freqOmega4)
+# ---------------- Rectangular ---------------- #
+indiceMaximoRectangular = np.argmax(np.abs(señalConRuidoFFT[:N//2, :]), axis=0)
+omega1 = frecuenciasPositivas[indiceMaximoRectangular]   # estimador de frecuencia
+sesgoOmega1 = np.mean(omega1) - f0
+varianzaOmega1 = np.var(omega1)
 
-#--------------- Blackman-Harris -----------#
-sesgo_f5 = Omega5 - f0
-var_f5 = np.var(freqOmega5)
+# ---------------- Hamming ---------------- #
+indiceMaximoHamming = np.argmax(np.abs(señalRuidosaHammingFFT[:N//2, :]), axis=0)
+omega2 = frecuenciasPositivas[indiceMaximoHamming]
+sesgoOmega2 = np.mean(omega2) - f0
+varianzaOmega2 = np.var(omega2)
+
+# ---------------- Flattop ---------------- #
+indiceMaximoFlattop = np.argmax(np.abs(señalRuidosaFlattopFFT[:N//2, :]), axis=0)
+omega3 = frecuenciasPositivas[indiceMaximoFlattop]
+sesgoOmega3 = np.mean(omega3) - f0
+varianzaOmega3 = np.var(omega3)
+
+# ---------------- Blackman-Harris ---------------- #
+indiceMaximoBlackmanHarris = np.argmax(np.abs(señalRuidosaBlackHFFT[:N//2, :]), axis=0)
+omega4 = frecuenciasPositivas[indiceMaximoBlackmanHarris]
+sesgoOmega4 = np.mean(omega4) - f0
+varianzaOmega4 = np.var(omega4)
+
+#---------------------------TABLA DE RESULTADOS---------------------------#
+print("\nESTIMADOR DE FRECUENCIA SNR:10dB")
+print("VENTANA          SESGO_FREQ        VAR_FREQ")
+print(f"Rectangular      {sesgoOmega1:.4f}        {varianzaOmega1:.4f}")
+print(f"Hamming          {sesgoOmega2:.4f}        {varianzaOmega2:.4f}")
+print(f"Flattop          {sesgoOmega3:.4f}        {varianzaOmega3:.4f}")
+print(f"Blackman-Harris  {sesgoOmega4:.4f}        {varianzaOmega4:.4f}")
+
+#---------------------------HISTOGRAMA---------------------------#
+plt.figure()
+plt.hist(omega1, bins=50, alpha=0.5, label="Rectangular")
+plt.hist(omega2, bins=50, alpha=0.5, label="Hamming")
+plt.hist(omega3, bins=50, alpha=0.5, label="Flattop")
+plt.hist(omega4, bins=50, alpha=0.5, label="Blackman-Harris")
+plt.axvline(f0, color="k", linestyle="--", label="Frecuencia real")
+plt.xlabel("Frecuencia estimada (Hz)")
+plt.ylabel("Número de realizaciones")
+plt.title("Histogramas de estimadores de frecuencia")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 
 
 
-print("ESTIMADOR DE AMPLITUD SNR:10dB")
+print("\nESTIMADOR DE AMPLITUD SNR:10dB")
 print("--------------------------------")
 print("VENTANA         SESGO_AMP      VAR_AMP")
 print(f"Rectangular     {sesgo_a2:.4f}      {var_a2:.4f}")
@@ -150,14 +179,6 @@ print(f"Hamming         {sesgo_a3:.4f}      {var_a3:.4f}")
 print(f"Flattop         {sesgo_a4:.4f}      {var_a4:.4f}")
 print(f"Blackman-Harris {sesgo_a5:.4f}      {var_a5:.4f}")
 
-# ---------- TABLA FRECUENCIA ----------
-print("\nESTIMADOR DE FRECUENCIA SNR:10dB")
-print("---------------------------------")
-print("VENTANA         SESGO_FREQ     VAR_FREQ")
-print(f"Rectangular     {sesgo_f2:.4f}      {var_f2:.4f}")
-print(f"Hamming         {sesgo_f3:.4f}      {var_f3:.4f}")
-print(f"Flattop         {sesgo_f4:.4f}      {var_f4:.4f}")
-print(f"Blackman-Harris {sesgo_f5:.4f}      {var_f5:.4f}")
 
 #para graficar me armo el eje de frecuencias
 freqs = np.linspace(0, fs, N)
@@ -252,16 +273,6 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# ----------HISTOGRAMA DE FRECUENCIA---------- #
-plt.figure(8)
-plt.hist(freqOmega2,label='Rectangular', bins = bins, color = 'cornflowerblue')
-plt.hist(freqOmega3,label='Hamming', alpha = 0.7, bins = bins, color = 'hotpink')
-plt.hist(freqOmega4,label='Flattop', alpha = 0.6, bins = bins, color = 'limegreen')
-plt.hist(freqOmega5,label='Blackman Harris', alpha = 0.5, bins = bins, color = 'indigo')
-plt.axvline(f0, color="k", linestyle="--", label="Frecuencia real")
-plt.legend()
-plt.grid(True)
-plt.show()
 
 
 
