@@ -4,6 +4,19 @@ import matplotlib.pyplot as plt
 import scipy.io as sio
 from scipy.io.wavfile import write
 
+
+def estimar_BW(PSD, ff, cota = 0.98):
+    energia_acumulada = np.cumsum(PSD) # El ultimo valor del vector contiene la suma de todos los anteriores (integral de toda la curva)
+    energia_acumulada_normalizada = energia_acumulada / energia_acumulada[-1] # De tamaño (nperseg, 1)
+    corte = energia_acumulada_normalizada[-1] * cota
+    elementos_discriminados = int (np.where(energia_acumulada_normalizada >= corte)[0][0]) # cota es el porcentaje que determina los valores que me quiero quedar de la señal (ej.: cota = 0.99)
+    frec_BW = ff[elementos_discriminados]
+    return frec_BW
+
+
+# %%
+
+
 ##################
 ## ECG sin ruido
 ##################
@@ -45,23 +58,6 @@ plt.show()
 df = freqW[1] - freqW[0]                 #paso en frecuencia (Hz)
 potTotal = np.sum(ecgW) * df            #potencia total (integral discreta)
 
-#potencia acumulada con el cumsum
-potAcum = np.cumsum(ecgW) * df          #integral acumulada desde 0 Hz
-
-# frecuencia donde se alcanza el 95% de la potencia
-nivel95 = 0.95 * potTotal
-indice95 = np.where(potAcum >= nivel95)[0][0]   # primer índice donde se supera el 95%
-frec95 = freqW[indice95]
-
-#para 97%
-nivel97 = 0.97 * potTotal
-indice97 = np.where(potAcum >= nivel97)[0][0]
-frec97 = freqW[indice97]
-
-#para 99%
-nivel99 = 0.99 * potTotal
-indice99 = np.where(potAcum >= nivel99)[0][0]
-frec99 = freqW[indice99]
 
 print("=====================================")
 print(f"Potencia total: {potTotal:.4e} V^2")
@@ -70,23 +66,6 @@ print(f"BW con 97%: {frec97:.2f} Hz")
 print(f"BW con 99%: {frec99:.2f} Hz")
 print("=====================================")
 
-
-
-
-
-
-
-
-
-# #periodogram
-# freqP, ecgP = sig.periodogram(ecg_one_lead, fs=fs_ecg)
-
-# #PSD perio
-# plt.figure()
-# plt.plot(freqP, ecgP, color="hotpink")
-# plt.title("PSD del ECG sin ruido con Periodograma")
-# plt.grid()
-# plt.show()
 
 
 # %%
