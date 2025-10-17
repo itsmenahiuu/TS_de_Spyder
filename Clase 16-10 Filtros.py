@@ -13,8 +13,8 @@ alpha_s = 40 #atenuacion minima a la ws, alpha_min, minima atenuacion requerida
 #en banda de paso
 
 
-# f_aprox = 'butter'
-# f_aprox = 'cheby1'
+#f_aprox = 'butter'
+f_aprox = 'cheby1'
 # f_aprox = 'cheby2'
 # f_aprox = 'ellip'
 # f_aprox = 'cauer'
@@ -78,6 +78,8 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
+# %%
+sos =signal.tf2sos(b,a, analog = True)
 
 
 
