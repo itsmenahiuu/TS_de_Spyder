@@ -3,14 +3,13 @@ from scipy import signal
 import matplotlib.pyplot as plt
 import scipy.io as sio
 
-
 #%%
 
 #Filtro digital  usando valores del ECG
 
 fs = 1000 #Hz
-wp = [0.8, 35] #frecuencia de corte (Hz)
-ws = [0.1, 40] #frecuencia de stop (Hz) arriba de los 35 debe ser la segunda
+wp = (0.8, 35) #frecuencia de corte (Hz)
+ws = (0.1, 40) #frecuencia de stop (Hz) arriba de los 35 debe ser la segunda
 #queremos q saque toda la frecuencia menor a 1 Hz (0.8)
 
 alpha_p = 1/2 #atenuación de corte (db), alpha maxima en bp
@@ -80,23 +79,30 @@ z, p, k = signal.sos2zpk(mi_sos)
 #Diseño de FIIR con metodo de ventanas usando firwin2
 
 wp = [0.8, 35] #frecuencia de corte (Hz)
-ws = [0.1, 40] #frecuencia de stop (Hz) arriba de los 35 debe ser la segunda
+ws = [0.1, 35.7] #frecuencia de stop (Hz) arriba de los 35 debe ser la segunda
 
 frecuencias = np.sort(np.concatenate(((0, fs/2), wp, ws)))
-deseado = [0, 0 ,1, 1, 0, 0] #es las respuesta deseada, debe ser un pasa banda
+deseado = [0, 0 , 1, 1, 0, 0] #es las respuesta deseada, debe ser un pasa banda
+# [ws, ws, wp, wp, ws, ws]
 cant_coef = 2000
 retardo = (cant_coef - 1)//2
 
+#para cuadrados minimos
 cant_coef_ls = 2001
 retardo_ls = (cant_coef - 1)//2
 
 fir_win_rect = signal.firwin2(numtaps = cant_coef, freq = frecuencias, gain = deseado, nfreqs = int((np.ceil(np.sqrt(cant_coef))*2)**2 )-1 ,window = 'boxcar', fs = fs)
-
-fir_win_ls = signal.firls(numtaps = cant_coef_ls, bands = frecuencias, desired = deseado,  fs = fs)
-
 fir_win_rect = np.convolve(fir_win_rect, fir_win_rect)
 
-w, h = signal.freqz(b = fir_win_rect, worN=np.logspace(-2,2,1000),fs = fs)
+#Cuadrados mínimos
+# deseado_ls = [0, 0 , 1, 1, 0, 0]
+W=[10, 1, 10] # es relativo al deseado, le ongo 1 a lo que quiero dejar igual
+fir_win_ls = signal.firls(numtaps = cant_coef_ls, bands = frecuencias, weight = W, desired = deseado,  fs = fs)
+
+
+# w, h = signal.freqz(b = fir_win_rect, worN=np.logspace(-2,2,1000),fs = fs)
+w, h = signal.freqz(b = fir_win_ls, worN=np.logspace(-2,2,1000),fs = fs)
+# w, h = signal.freqz(b = fir_win_rect, worN=np.logspace(-2,2,1000),fs = fs)
 
 phase = np.unwrap(np.angle(h)) #con unwrap evita la discontinuidad de fase (discontinuidad evitable)
 
@@ -107,7 +113,7 @@ gd = -np.diff(phase)/np.diff(w_rad) #retardo de grupo
 
 # Magnitud
 plt.subplot(2,2,1)
-plt.plot(w, 20*np.log10(abs(h)), label = f_aprox)
+plt.plot(w, 20*np.log10(abs(h)), label = f_aprox, color = 'orchid')
 # plot_plantilla(filter_type = 'bandpass', fpass = wp, ripple = alpha_p*2, fstop = wp, )
 plt.title('Respuesta en Magnitud')
 plt.xlabel('Frecuencia [Hz]')
