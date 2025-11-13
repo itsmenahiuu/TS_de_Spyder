@@ -1,0 +1,23 @@
+Informe:
+    Edición: 
+        * Pasar el Jupyter Notebook por un corrector. Donde dice seran debió decir serán
+          Y donde dice enteder debió decir entender. 
+
+    Conclusión: 
+        * Falta comentar algo sobre el estimador de ancho de banda, especialmente sobre su
+          varianza y cómo afectan los métodos de estimación espectral los resultados del mismo.  
+
+
+Código: 
+    * Corre sin problemas.
+
+Desarrollo:
+    * No conviene mostrar las estimaciones de los espectros de los distintos métodos en el 
+      mismo plot, usá subplots.
+    * Graficar la señal de PPG en un rango temporal más chicos para que se vea bien.
+    * Falta justificar la selección de las ventanas que usaron en Welch y Periodograma.
+    * Falta un análisis de qué factor es más relevante en la estimación espectral cuando 
+      queremos estimar ancho de banda: varianza, resolución o leakage? 
+    
+Sugerencias:
+    * Si los espectros están en Hz, por qué no graficar las señales en segundos?
