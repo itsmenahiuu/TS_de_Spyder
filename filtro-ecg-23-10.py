@@ -152,9 +152,6 @@ plt.grid(True, which='both', ls=':')
 plt.tight_layout()
 plt.show()
 
-
-
-
 #%%
 
 #Divido por 2 a los alfas pq con el filtfilt se va al doble de ripple sino (y doble de atenuación que es bueno eso) y asi podemos neutralizar la fase tranquilamente

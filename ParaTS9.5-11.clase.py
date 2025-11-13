@@ -15,6 +15,7 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import scipy.io as sio
+from scipy import interpolate
 
 
 #ECG
@@ -38,12 +39,62 @@ plt.figure(1)
 plt.plot(ecg_one_lead, label = 'ecg', color = 'orchid')
 plt.plot(ECG_med600, label = 'med 600', color = 'cornflowerblue')
 plt.plot(resta, label = 'resta', color = 'rebeccapurple')
-# plt.title('Respuesta en Magnitud')
+plt.title('Mediana')
 # plt.xlabel('Frecuencia [Hz]')
 # plt.ylabel('|H(jω)| [dB]')
 plt.legend()
 plt.grid(True, which='both', ls=':')
-plt.xlim(3000, 5000)
+#plt.xlim(3000, 5000)
+
+
+# %% cubib spline
+
+fs = 1000
+qrs_detections = mat_struct['qrs_detections'].flatten()
+n0 = int(0.08 * fs) #numero random de ms antes del QRS
+m_i = qrs_detections - n0 #posiciones en el tiempo
+
+#valores de ECG en esos puntos
+s_m = ecg_one_lead[m_i] #valores del ecg en las posiciones m_i
+
+Cspline = interpolate.CubicSpline(m_i, s_m) #crea la función spline que interpola entre los puntos PQ
+b = Cspline(np.arange(N)) #evalua la spline en todos los puntos del ECG
+
+restaCS = ecg_one_lead-b
+
+plt.figure(2)
+plt.plot(ecg_one_lead, label = 'ecg', color = 'yellowgreen')
+plt.plot(b, label='spline', color='pink')
+#plt.plot(restaCS, label = 'resta', color = 'skyblue')
+plt.title('Spline Cubico')
+plt.legend()
+#plt.xlim(3000, 5000)
+plt.grid(True)
+plt.show()
+
+# %% comparacion
+plt.figure(3)
+plt.plot(resta, label = 'mediana', color = 'lightcoral')
+plt.plot(restaCS, label = 'spline', color = 'mediumpurple')
+plt.title('comparacion')
+plt.legend()
+plt.xlim(4250, 4500)
+plt.grid(True)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
