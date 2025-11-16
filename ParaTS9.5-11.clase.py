@@ -25,13 +25,19 @@ ecg_one_lead = mat_struct['ecg_lead'].flatten()
 N = len(ecg_one_lead)
 cant_muestras = N
 
-#cantidad ded muestras de la mediana
-cant_muestras_med = 201
 
-ECG_med200 = signal.medfilt(ecg_one_lead, cant_muestras_med) #kernel size impar porque algo par no tiene media
+
+#--------(1) Filtro de mediana--------#
+
+fs = 1000
+k200 = int(0.2 * fs) | 1   #cantidad de muestras de la mediana
+k600 = int(0.6 * fs) | 1
+#esta codeado de esta forma porque necesitaba asegurar que mi fs sea 1000Hz y que quede impar tmb
+
+ECG_med200 = signal.medfilt(ecg_one_lead, k200) #kernel size impar porque algo par no tiene media
 #200 es la canti
 
-ECG_med600 = signal.medfilt(ECG_med200, 601) #kernel size impar porque algo par no tiene media
+ECG_med600 = signal.medfilt(ECG_med200, k600) #kernel size impar porque algo par no tiene media
 
 resta = ecg_one_lead-ECG_med600
 
@@ -40,8 +46,8 @@ plt.plot(ecg_one_lead, label = 'ecg', color = 'orchid')
 plt.plot(ECG_med600, label = 'med 600', color = 'cornflowerblue')
 plt.plot(resta, label = 'resta', color = 'rebeccapurple')
 plt.title('Mediana')
-# plt.xlabel('Frecuencia [Hz]')
-# plt.ylabel('|H(jω)| [dB]')
+plt.xlabel("Tiempo [s]")
+plt.ylabel("Amplitud [V]") 
 plt.legend()
 plt.grid(True, which='both', ls=':')
 plt.xlim(3000, 5000)
@@ -49,10 +55,13 @@ plt.xlim(3000, 5000)
 
 # %% cubib spline
 
+#--------(2) Interpolación mediante splines cúbicos--------#
+
 fs = 1000
 qrs_detections = mat_struct['qrs_detections'].flatten()
 n0 = int(0.06 * fs) #numero random de ms antes del QRS
 m_i = qrs_detections - n0 #posiciones en el tiempo
+m_i = m_i[m_i > 0]  #elimino los negativos para no tomar indices desde el final del vector
 
 #valores de ECG en esos puntos
 s_m = ecg_one_lead[m_i] #valores del ecg en las posiciones m_i
@@ -65,27 +74,34 @@ restaCS = ecg_one_lead-b
 plt.figure(2)
 plt.plot(ecg_one_lead, label = 'ecg', color = 'yellowgreen')
 plt.plot(b, label='spline', color='pink')
-#plt.plot(restaCS, label = 'resta', color = 'skyblue')
+plt.plot(restaCS, label = 'resta', color = 'skyblue')
 plt.title('Spline Cubico')
+plt.xlabel("Tiempo [s]")
+plt.ylabel("Amplitud [V]") 
 plt.legend()
-#plt.xlim(3000, 5000)
+plt.xlim(3000, 5000)
 plt.grid(True)
 plt.show()
 
-# %% comparacion
-plt.figure(3)
-plt.plot(resta, label = 'mediana', color = 'lightcoral')
-plt.plot(restaCS, label = 'spline', color = 'mediumpurple')
-plt.title('comparacion')
-plt.legend()
-plt.xlim(4250, 4500)
-plt.grid(True)
-plt.show()
+# %% comparacion (no es necesaria para el tp)
+# plt.figure(3)
+# plt.plot(resta, label = 'mediana', color = 'lightcoral')
+# plt.plot(restaCS, label = 'spline', color = 'mediumpurple')
+# plt.title('comparacion')
+# plt.legend()
+# plt.xlim(4250, 4500)
+# plt.grid(True)
+# plt.show()
 
 
 
 # %% 3
 
+#--------(3)  Filtro adaptado (matched filter)--------#
+
+
+
+#----------------cosntruyo mi filtro adaptado----------------#
 qrs_real = mat_struct['qrs_detections'].flatten().astype(int)
 patron = mat_struct['qrs_pattern1'].flatten().astype(float)
 # Se invierte el patrón para hacer correlación
@@ -95,121 +111,111 @@ patron = patron - np.mean(patron)
 patron = patron / np.std(patron)
 valor_medio_patron = np.mean(patron)#verificoo
 
-ecg_detection = signal.lfilter(b=patron[::-1], a=1, x=restaCS.astype(float))
+
+#normalizo
+restaCS = restaCS - np.mean(restaCS)
+restaCS = restaCS / np.std(restaCS)
+
+
+#----------------aplico mi filtro adaptado----------------#
+ecg_detection = signal.lfilter(b=patron[::-1], a=1, x=restaCS)
 #en vez de usar ecg_one_lead, uso restaCS para la correlacion, esto elimina la línea base y mejora la coincidencia con el patrón
+
+#El filtro adaptado es una correlación cruzada (una convolución con el patrón invertido)
+
 
 #valor absol
 ecg_detection_abs = np.abs(ecg_detection)
+ecg_detection_abs = ecg_detection_abs / np.std(ecg_detection_abs)
 
 
+#compenso mi demora
+demora = len(patron) - np.argmax(patron)
+ecg_detection_abs = np.roll(ecg_detection_abs, -demora)
 
-#deteccion de picos
 
-umbral = 0.3 * np.max(ecg_detection_abs)#me armo un umbral adaptativo para evitar picos debiles que no son qrs
+#----------------deteccion de picos----------------#
 
-mis_qrs, _ = signal.find_peaks(ecg_detection_abs,
-                               height=umbral,
-                               distance=200)
+umbral = 1
 
-demora = len(patron) - 1
-mis_qrs_correct = mis_qrs - demora
+peaks, _ = signal.find_peaks(ecg_detection_abs, height=umbral, distance=300)
 
-plt.figure(4)
-plt.plot(ecg_one_lead, label="ECG original", color="orchid", linewidth=1)
+mis_qrs = peaks #mis detecciones
 
-# Picos detectados
-plt.plot(mis_qrs, ecg_one_lead[mis_qrs], "go", label="QRS detectados", markersize=6)
 
-# Picos reales
-plt.plot(qrs_real, ecg_one_lead[qrs_real], "rx", label="QRS reales", markersize=6)
+#----------------grafico----------------#
 
-#
-plt.plot(qrs_real)
-plt.plot(ecg_detection_abs)
-
-plt.title("Comparación de detecciones QRS")
+plt.figure(3)
+plt.plot(restaCS, label="ECG filtrada (restaCS)", color='mediumpurple', zorder=1)
+plt.scatter(qrs_real, restaCS[qrs_real], color='skyblue', label='QRS reales', s=25, zorder=2)
+plt.scatter(mis_qrs, restaCS[mis_qrs], color='hotpink', label='QRS detectados',marker='*',s=25, zorder=3)
+plt.title("Detección de latidos con filtro adaptado")
 plt.xlabel("Muestras")
 plt.ylabel("Amplitud")
-plt.legend(loc="upper right")
-plt.grid(True, linestyle=":")
-#plt.xlim(8000, 20000)
-plt.tight_layout()
-plt.show()
-
-
-def validar_detecciones(qrs_real, qrs_detectados, tolerancia=50):
-    TP = 0  # Verdaderos positivos
-    FP = 0  # Falsos positivos
-    FN = 0  # Falsos negativos
-
-    detectados_usados = np.zeros(len(qrs_detectados), dtype=bool)
-
-    for qrs in qrs_real:
-        # Buscar detección dentro de la tolerancia
-        coincidencias = np.where(np.abs(qrs_detectados - qrs) <= tolerancia)[0]
-        if len(coincidencias) > 0:
-            idx = coincidencias[0]
-            if not detectados_usados[idx]:
-                TP += 1
-                detectados_usados[idx] = True
-            else:
-                FN += 1
-        else:
-            FN += 1
-
-    FP = np.sum(~detectados_usados)
-
-    sensibilidad = TP / (TP + FN) if (TP + FN) > 0 else 0
-    precision = TP / (TP + FP) if (TP + FP) > 0 else 0
-
-    return sensibilidad, precision, TP, FP, FN
-
-# Aplicación
-sens, prec, TP, FP, FN = validar_detecciones(qrs_real, mis_qrs_correct)
-print(f"Sensibilidad: {sens:.3f}, Precisión: {prec:.3f}")
-print(f"TP: {TP}, FP: {FP}, FN: {FN}")
-
-
-
-fs = 1000
-ventana = int(0.2 * fs)  # 200 ms alrededor del QRS
-qrs_real = mat_struct['qrs_detections'].flatten().astype(int)
-
-# Seleccionamos algunos QRS (por ejemplo, los primeros 20 que estén bien ubicados)
-segmentos = []
-for qrs in qrs_real[:20]:
-    if qrs - ventana//2 >= 0 and qrs + ventana//2 < len(ecg_one_lead):
-        segmento = ecg_one_lead[qrs - ventana//2 : qrs + ventana//2]
-        segmentos.append(segmento)
-
-segmentos = np.array(segmentos)
-
-
-plt.figure(figsize=(10, 6))
-
-# Graficamos todos los QRS reales
-for i, seg in enumerate(segmentos):
-    plt.plot(seg, alpha=0.4, label=f'QRS {i+1}' if i < 5 else None, color='gray')
-
-# Graficamos el patrón
-patron = mat_struct['qrs_pattern1'].flatten().astype(float)
-patron = patron - np.mean(patron)
-patron = patron / np.std(patron)
-plt.plot(patron, label='Patrón QRS', color='red', linewidth=2)
-
-plt.title('Comparación entre QRS reales y patrón')
-plt.xlabel('Muestras')
-plt.ylabel('Amplitud normalizada')
-plt.legend()
 plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+#zoom
+plt.figure(4)
+plt.plot(restaCS, label="ECG filtrada (restaCS)", color='mediumpurple', zorder=1)
+plt.scatter(qrs_real, restaCS[qrs_real], color='skyblue', label='QRS reales', s=25, zorder=2)
+plt.scatter(mis_qrs, restaCS[mis_qrs], color='hotpink', label='QRS detectados',marker='*',s=25, zorder=3)
+plt.title("Detección de latidos (zoom)")
+plt.xlabel("Muestras")
+plt.ylabel("Amplitud")
+plt.xlim(686000, 690000)
+plt.ylim(-3, 4)
+plt.grid(True)
+plt.legend()
 plt.tight_layout()
 plt.show()
 
 
+#----------------matriz de confusion----------------#
+
+tol = int(0.05 * fs)   # tolerancia de 50 ms
+
+TP = 0
+FP = 0
+FN = 0
+
+qrs_real = np.array(qrs_real)
+real_marcados = np.zeros(len(qrs_real), dtype=bool)
+
+for p in mis_qrs:
+    # buscar un QRS real cercano
+    diffs = np.abs(qrs_real - p)
+    idx = np.where(diffs < tol)[0]
+    if len(idx) > 0:
+        TP += 1
+        real_marcados[idx[0]] = True
+    else:
+        FP += 1
+
+FN = np.sum(~real_marcados)
 
 
+#----------------metricas del detector----------------#
 
+precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+sensibilidad = TP / (TP + FN) if (TP + FN) > 0 else 0
+f1 = 2 * precision * sensibilidad / (precision + sensibilidad) if (precision + sensibilidad) > 0 else 0
+    
+    
+#----------------impresion de resultados----------------#
 
+print("== MATRIZ DE CONFUSIÓN ==")
+print("                Predicho")
+print("               Sí      No")
+print(f"Real Sí     [{TP:3d}    {FN:3d}]")
+print(f"Real No     [{FP:3d}      - ]")
+
+print("\n== MÉTRICAS ==")
+print(f"Precisión:     {precision:.3f}")
+print(f"Sensibilidad:  {sensibilidad:.3f}")
+print(f"F1 Score:      {f1:.3f}")
 
 
 
